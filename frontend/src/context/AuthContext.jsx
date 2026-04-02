@@ -3,13 +3,19 @@ import { createContext, useContext, useEffect, useState } from "react";
 import authService from "../services/authService";
 
 const AuthContext = createContext(null);
+const readStoredUser = () => {
+  try {
+    const stored = localStorage.getItem("collabdocs_user");
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    localStorage.removeItem("collabdocs_user");
+    return null;
+  }
+};
 
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("collabdocs_token") || "");
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("collabdocs_user");
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState(readStoredUser);
   const [loading, setLoading] = useState(Boolean(token));
 
   useEffect(() => {
@@ -42,12 +48,14 @@ function AuthProvider({ children }) {
     const data = await authService.signup(payload);
     setUser(data.user);
     setToken(data.token);
+    return data;
   };
 
   const login = async (payload) => {
     const data = await authService.login(payload);
     setUser(data.user);
     setToken(data.token);
+    return data;
   };
 
   const logout = () => {

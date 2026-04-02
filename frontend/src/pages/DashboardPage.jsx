@@ -25,13 +25,21 @@ export default function DashboardPage() {
   }, []);
 
   const handleCreate = async () => {
-    const data = await documentService.create({ title: "Untitled document" });
-    navigate(`/documents/${data.document._id}`);
+    try {
+      const data = await documentService.create({ title: "Untitled document" });
+      navigate(`/documents/${data.document._id}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to create document");
+    }
   };
 
   const handleDelete = async (id) => {
-    await documentService.delete(id);
-    setDocuments((prev) => prev.filter((document) => document._id !== id));
+    try {
+      await documentService.delete(id);
+      setDocuments((prev) => prev.filter((document) => document._id !== id));
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete document");
+    }
   };
 
   return (

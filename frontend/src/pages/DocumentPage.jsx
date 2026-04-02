@@ -27,8 +27,12 @@ export default function DocumentPage() {
   const canEdit = document?.currentUserRole === "owner" || document?.currentUserRole === "editor";
 
   const loadSidebar = async () => {
-    const data = await documentService.list();
-    setDocuments(data.documents);
+    try {
+      const data = await documentService.list();
+      setDocuments(data.documents);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to load documents");
+    }
   };
 
   const loadDocument = async () => {
@@ -126,43 +130,71 @@ export default function DocumentPage() {
   };
 
   const saveNow = async () => {
-    const data = await documentService.update(id, { title, content });
-    setDocument(data.document);
-    setTitle(data.document.title);
-    setContent(data.document.content);
-    setStatus(`Saved at ${new Date().toLocaleTimeString()}`);
-    setVersions((await documentService.versions(id)).versions);
-    await loadSidebar();
+    try {
+      const data = await documentService.update(id, { title, content });
+      setDocument(data.document);
+      setTitle(data.document.title);
+      setContent(data.document.content);
+      setStatus(`Saved at ${new Date().toLocaleTimeString()}`);
+      setVersions((await documentService.versions(id)).versions);
+      await loadSidebar();
+    } catch (err) {
+      setError(err.response?.data?.message || "Manual save failed");
+    }
   };
 
   const handleShare = async (payload) => {
-    const data = await documentService.share(id, payload);
-    setDocument(data.document);
+    try {
+      const data = await documentService.share(id, payload);
+      setDocument(data.document);
+      await loadSidebar();
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to share document");
+    }
   };
 
   const handleRemoveCollaborator = async (userId) => {
-    const data = await documentService.removeCollaborator(id, userId);
-    setDocument(data.document);
+    try {
+      const data = await documentService.removeCollaborator(id, userId);
+      setDocument(data.document);
+      await loadSidebar();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to remove collaborator");
+    }
   };
 
   const handleRestore = async (versionId) => {
-    const data = await documentService.restoreVersion(id, versionId);
-    setDocument(data.document);
-    setTitle(data.document.title);
-    setContent(data.document.content);
-    setVersions((await documentService.versions(id)).versions);
-    emitChange(data.document.title, data.document.content);
+    try {
+      const data = await documentService.restoreVersion(id, versionId);
+      setDocument(data.document);
+      setTitle(data.document.title);
+      setContent(data.document.content);
+      setVersions((await documentService.versions(id)).versions);
+      emitChange(data.document.title, data.document.content);
+      await loadSidebar();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to restore version");
+    }
   };
 
   const handleCreate = async () => {
-    const data = await documentService.create({ title: "Untitled document" });
-    navigate(`/documents/${data.document._id}`);
+    try {
+      const data = await documentService.create({ title: "Untitled document" });
+      navigate(`/documents/${data.document._id}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to create document");
+    }
   };
 
   const handleDelete = async (documentId) => {
-    await documentService.delete(documentId);
-    setDocuments((prev) => prev.filter((item) => item._id !== documentId));
-    if (documentId === id) navigate("/");
+    try {
+      await documentService.delete(documentId);
+      setDocuments((prev) => prev.filter((item) => item._id !== documentId));
+      if (documentId === id) navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete document");
+    }
   };
 
   if (error && !document) {
@@ -217,6 +249,11 @@ export default function DocumentPage() {
           />
 
           <main className="space-y-6">
+            {error ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            ) : null}
             <section className="rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-panel">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
